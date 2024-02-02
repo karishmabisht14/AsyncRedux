@@ -1,45 +1,48 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Cart from "./components/Cart/Cart";
 import Layout from "./components/Layout/Layout";
 import Products from "./components/Shop/Products";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect } from "react";
+import Notification from "./components/UI/Notification";
+import { fetchCartData, sendCartData } from "./redux/cart-actions";
 
 let initial = true;
 
 function App() {
+  const dispatch = useDispatch();
   const showCart = useSelector((state) => state.showCart.cartIsShown);
   const cart = useSelector((state) => state.cart);
-  const [error, setError] = useState("");
+  const notification = useSelector((state) => state.ui.notification);
 
   useEffect(() => {
-    async function fetchData() {
-      setError("Sending Request");
-      const response = await fetch(
-        "https://async-redux-d1e1b-default-rtdb.firebaseio.com/cart.json",
-        {
-          method: "PUT",
-          body: JSON.stringify(cart),
-          headers: { "Content-type": "application/json" },
-        }
-      );
-      if (response.ok) {
-        setError("Request is successful");
-      } else {
-        setError("Request is failed!!!");
-      }
+    dispatch(fetchCartData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (initial) {
+      initial = false;
+      return;
     }
-    if (!initial) {
-      fetchData();
+
+    if (cart.change) {
+      dispatch(sendCartData(cart));
     }
-    initial = false;
-  }, [cart]);
+  }, [cart, dispatch]);
 
   return (
-    <Layout>
-      {error.length !== 0 && <h3 className="Error">{error}</h3>}
-      {showCart && <Cart />}
-      <Products />
-    </Layout>
+    <Fragment>
+      {notification != null && (
+        <Notification
+          status={notification.status}
+          title={notification.title}
+          message={notification.message}
+        />
+      )}
+      <Layout>
+        {showCart && <Cart />}
+        <Products />
+      </Layout>
+    </Fragment>
   );
 }
 
